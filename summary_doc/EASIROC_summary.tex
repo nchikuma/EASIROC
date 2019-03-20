@@ -1,0 +1,493 @@
+\documentclass[english]{jsarticle}
+\usepackage[dvipdfmx]{graphicx}
+\usepackage{feynmf}
+\usepackage{wrapfig}
+
+
+
+\title{Firmware Update for NIM EASIROC Module}
+\author{Naruhiro Chikuma\\the University of Tokyo}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+	\begin{flushright}
+		E-mail:nchikuma \_at\_ hep.phys.s.u-tokyo.ac.jp
+	\end{flushright}
+
+
+	\begin{abstract}
+	\end{abstract}
+
+\setcounter{tocdepth}{3}
+\tableofcontents
+\listoffigures
+\listoftables
+
+
+\clearpage 
+\section{EASIROC}
+\subsection{Chip description}
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=0.9\hsize]{fig/EASIROC_BlocDiagram.png}
+		\caption{EASIROC schematic.\cite{EASIROC datesheet}}
+		\label{fig:easiroc_blocdiagram}
+	\end{figure}
+
+\subsection{``Slow control'' register}
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=0.9\hsize]{fig/SlowControl_Parameters.png}
+		\caption{Slow control parameters.\cite{EASIROC datesheet}}
+		\label{fig:slowcontrol_para}
+	\end{figure}
+\subsection{``Probe'' register}
+\subsection{Multiplexed outputs description}
+\subsection{``Power pulsing'' and power ON/OFF functions}
+
+\clearpage
+\section{NIM EASIROC Module}
+The NIM EASIROC module has been developed by KEK and Open-It for the purpose of ................. ................. ................. ................. ................. ................. ................. ................. ................. ................. ................. 
+\subsection{EASIROC chips}
+	Two EASIROCs are mounted on the board, so that 64 channels of MPPC are able to be measured in total. Outputs from the EASIROCs' slow shaper are connected to four ADCs, and then transferred to an FPGA. Discriminators' outputs from EASIROC are directly connected to the FPGA, and to LVDS outputs on the back-panel.
+\subsection{FPGA}
+	An FPGA is used to control signals from EASRIOC and from/to front-panel inputs/outputs, that is a product of Xilinx, Artix-7 series; XC7A100T-2FGG676C.
+\subsection{Interface}
+ On the front-panel are 6 digital signal inputs, 5 digital outputs, and 5 analog outputs. Also, there are 64 channels inputs for MPPC and an Ethernet connector for data acquisition and other firmware controls. On the back-panel are LVDS outputs for each MPPC channel, +6V AC power supply, and NIM power supply.
+\subsubsection{Digital inputs}
+\subsubsection{Digital outputs}
+\subsubsection{Analog outputs}
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=0.4\hsize]{fig/NIM_FrontPanel.png}
+		\caption{The front and back overview of NIM  EASIROC Module.}
+		\label{fig:FrontPanel}
+	\end{figure}
+\subsection{LED}
+	There are four LEDs on the front-panel (Dialight 568-0721-111), flashing with double colors, green or red. They are able to be controlled in the firmware, and still be adjustable and optimized.
+\subsection{Jumper pins}
+	Three jumper pins are on the board.
+	\begin{itemize}
+		\item JP1 ... 
+		\item JP2 ...
+		\item JP3 ...
+	\end{itemize}
+
+\clearpage
+\section{Firmware}
+\subsection{Inherited functions from VME EASIROC module}
+Many functions were already implemented in the VME EASIROC module's firmware \cite{shiozaki}, such as controlling data acquisition, ``slow control'', and the trigger manager.
+\subsubsection{ADC}
+	This module controls pedestal suppressions, too.
+\subsubsection{Multi-hit TDC}
+\subsubsection{Scaler}
+	\begin{enumerate}
+		\item Scalar timer
+	\end{enumerate}
+
+\subsubsection{Clock manager}
+Using the external 50\,MHz clock signal, clock signals with different frequencies to be used in the firmware;
+	\begin{itemize}
+		\item 3\,MHz, used for controlling AD9220.
+		\item 6\,MHz, used for ``slow control'' and ADC module.
+		\item 25\,MHz, used for SiTCP.
+		\item 66\,MHz, used for controlling SPI FLASH memory.
+		\item 125\,MHz, used for TDC operation and Scaler.
+		\item 250\,MHz, with different phases of 0$^\circ$, 90$^\circ$, 180$^\circ$ and 270$^\circ$, used for TDC sampling.
+	\end{itemize}
+\subsubsection{Reset manager}
+\subsubsection{Trigger manager}
+Trigger manger module receives front-panel signals such as ``HOLD'', ``CLEAR'', ``ACCEPT'', and ``T STOP'', and distributes trigger, busy, or clear signals for other modules. As receiving ``HOLD'' signal, it sends trigger signals for EASIROC to hold the electric charge of the slow shaper. ``CLEAR'' signal leads to fast clear signals for other firmware modules. Receiving ``ACCEPT'' signal, a trigger is sent to global gather module and data transmit via SiTCP is started. ``T STOP'' signal corresponds to the common stop for TDC and scaler. While data acquisition, ``HOLD'', ``T STOP'', and ``ACCEPT'' signals have to be sent to the NIM EASIROC module in this oder for each event. The timing difference between ``HOLD'' and ``ACCEPT'' must be larger than 2 $\mu$s to wait for all the ADC values are stored in the firmware.
+\subsubsection{Discriminator's OR signal}
+\subsubsection{SiTCP}
+	\begin{enumerate}
+		\item SiTCP library
+		\item RBCP distributor
+	\end{enumerate}
+\subsubsection{``Slow control''}
+\subsubsection{Direct control}
+	Hold signal (pin:\,holdb), reset of PreAmp charge (pin:\,reset\_pa), reset of latched trigger if used (pin:\,raz\_chn), and acquisition window (pin:\,val\_evt) are controlled by this module. Besides, power pulsing mode (pin:\,pwr\_on), register selection of either ``probe'' or ``slow control'' (pin:\,select), load of slow control (pin:\,load\_sc), selected register reset (pin:\,rstb\_sr), and read register reset (pin:\,tstb\_read) are controlled.
+\subsubsection{Status register}
+Users could select the mode;
+	\begin{itemize}
+		\item DAQ mode ... This mode enables taking data.
+		\item ADC on/off ... ``On'' mode enables taking ADC data, and ``off'' disables.
+		\item TDC on/off ... ``On'' mode enables taking TDC data, and ``off'' disables.
+		\item Scaler on/off ... ``On'' mode enables taking Scaler data, and ``off'' disables.
+	\end{itemize}
+\subsubsection{Read register}
+Users can select the channel whose signal after slow shaper is probed from ``HG'' output on the front-panel through this module as ``read register.'' 
+\subsubsection{Read register selector}
+This module selects connections of read register inputs to EASIROC (pin: clk\_read, srin\_read, and  rstb\_read). While taking data with DAQ mode, read register pins are connected to ADC module. While not taking data, that is out from DAQ mode, read register pins are connected to Global read register module. 
+\subsubsection{Version}
+\subsubsection{Data transfer}
+	\begin{enumerate}
+		\item Global gatherer
+		\item Global sender
+	\end{enumerate}
+\subsubsection{SPI FLASH programmer}
+
+\subsection{Unique functions to NIM EASIROC module}
+\subsubsection{MPPC's HV control}
+	90\,V boost DC/DC converter with APD current monitor (LT3482EUD\cite{HV datasheet}) is able to provide bias voltage to MPPCs with up to 90\,V output, as being combined with a 16-bit digital-to-analog converter (DAC8411 TEXAS INSTRUMENTS\cite{dac8411_datasheet}) which sends a reference current. The following four pins control the bias voltage;
+	\begin{enumerate}
+		\item bias voltage supplier's shutdown/enable (``HV\_EN'') ... this is always set as ``enable'' as the NIM module is powered on, but it would be possible to set ``shutdown'' by sending the shutdown signal through RBCP bus.
+		\item serial input to 16\,bits DAC (``SDI\_DAC'') ...  Users send 16\,bits DAC input value to the firmware with the upper 8\,bits and lower 8\,bits separately in order through RBCP bus.
+		\item control clock signal for 16\,bits DAC (``SCK\_DAC'') ... As the control clock signal, 25\,MHz is used.
+		\item enable signal for 16\,bits DAC (``CS\_DAC'') ...  As starting to send the serial DAC input value, this enable pin is set only while one clock period.
+	\end{enumerate}
+  
+\subsubsection{Monitor ADC}
+An ADC, AD7795\cite{monitor ADC}, is mounted on the NIM EASIROC module for the purpose to monitor the values of MPPC's bias voltage, bias current, 8-bit InputDAC, and temperature. It is possible for users to select a mode of theme, and also a channel or all channels of the chips as for InputDAC. The monitor ADC's output is provided as the serial signal and interpreted in the firmware due to the calibration's coefficients. The resisters corresponds to the data sent by users. Users send 8\,bits data and this module correspondingly sends the register values to the monitor ADC, such as selecting readout channels, reading the current configuration, reading the monitor ADC data, selecting ADC mode, and sending reset as follows;
+
+\begin{table}[htbp]
+\begin{center}
+\begin{tabular}{l|l|p{10cm}}
+\hline
+Data sent by users & Register & Remark\\
+\hline
+\hline
+0 - 10 & 0x10001\{data\} & Communication Register (8 bits) is set for the write operation mode and the following 16 bits are written into Configuration Register. Configuration Register sets bias voltage generator disabled, bipolar coding enabled, the gain value as 1, ADC input range as 2.5 V, the external reference, and unbuffered mode. And also select the active analogue input channel. \\
+\hline
+248 & 0x080003 & Communication Register (8 bits) is set for the write operation mode and the following 16 bits are written into Mode Register. The reaout mode is set as the normal (single) readout, not the continuous readout. Mode Register sets the continuous convesion mode (default), the internal 64 kHz clock for the operation of AD7795, 125 Hz filter updata rate. \\
+\hline
+240 & 0x58 & Comunication Register is set for the read operation mode. The following register is Data Register and allow the access to the result of  conversion.\\
+\hline
+254 & 0x50 & Comunication Register is set for the read operation mode. The following register is Configuration Register and allow the access to the current configuration.\\
+\hline
+255 & 0xFF & ADC is reset.\\
+\hline
+\end{tabular}
+\caption{Function in the firmware for the monitor ADC's register}
+\label{tab:madc_register}
+\end{center}
+\end{table}
+
+	
+\subsubsection{LED control}
+This module controls four LEDs on the front-panel. For each LED, there are two inputs; one turns on ``green'' and the other turns on ``red'', and the LED is tuened off when none of them is on. At present, these are controlled as follows:
+	\begin{itemize}
+		\item LED1 ... While power is supplied for the NIM module, the LED is turned on.  ``Green'' is on while TCP connection (``Tcp\_Open\_Ack'') is running, and ``red'' is on while TCP connection is not running.
+		\item LED2 ... Busy signal turns ``red'' light on.
+		\item LED3 ... Trigger signal (the OR signal of two ``OR32'') turns ``green'' light on.
+		\item LED4 ... When the MPPC bias voltage is higher than 5\,V, ``green'' is on.
+	\end{itemize}
+
+\subsubsection{Trigger width adjuster}
+Users can adjust the width of trigger signal for selectable logic module from 40\,ns up to 800\,ns, by 8ns step. The leading edge of the width-adjusted trigger signal is synchronized with the raw trigger signal from EASIROC, but the trailing edge is not synchronized with the raw trigger but synchronized with 125\,MHz internal clock signal. Therefore, the trigger timing is synchronized with raw trigger, but instead the trigger width of the adjusted trigger signal is not fixed but fluctuates with around $\pm$4\,ns. This adjusted triggers are used in ``selectable logic'' module and then probed out to the front-panel ``TRIG'' output, but TDC and scaler modules use the triggers with its raw width.
+\subsubsection{Selectable logic}
+Using the width-adjusted trigger, users can select pattern triggers by three register values, such as pattern, threshold for the number of hits, and the channel number used for AND logic. The following the list of pattern triggers.
+	\begin{itemize}
+		\item One channel ... The selected one of 64 channels is probed out. The number of hits and the AND logic do not affect the output with this pattern.
+		\item OR signal of a chip ... The OR signal of 32 channels in the selected chip is probed out. If the threshold is set, the output would be ``on'' only if the number of hits in the selected chip is more than the threshold or equal. The AND logic does not affect the output with this pattern.
+		\item OR signal of all 64 channels ... The OR signal of all 64 channels is probed out. If the threshold is set, the output would be ``on'' only if the number of hits in 64 channels is is more than the threshold or equal.
+		\item ( OR signal of chip 1 ) AND ( OR signal of chip 2) ... If the threshold is set, both of the numbers of hits in each chip are required to be more than the threshold or equal. The AND logic does not affect the output with this pattern.
+		\item ( OR of channel 0 to 15 ) AND ( OR of channel 16 to 31 ) AND ( OR of channel 32 to 47 ) AND ( OR of channel 48 to 63 ) ... If the threshold is set, all of four numbers of hits in each group are required to be more than the threshold or equal. The AND logic does not affect the output with this pattern.
+		\item AND signal of the selected channels in a chip, or within all 64 channels ... Users can select the channels which are used in the AND logic. The threshold of the number of hits does not affect the output in these patterns.
+		\item ( selected AND logic in chip 1 ) OR ( selected AND logic in chip 2) ... Users can select the channels which are used in the AND logic. The threshold of the number of hits does not affect the output in these patterns.
+	\end{itemize}
+
+\subsubsection{Test charge injection}
+This module controls the direct input for EASIROC when the pin ``In\_calib\_EN'' is on. The module is operated by the same clock as TDC module that is 125\,MHz, and when the count becomes equal to 32768 the voltage is biased during one period, 8\,ns, into the calibration pin of the both chips, which is converted into electric charge by 3\,pF capacitors for both of low gain and high gain pre-amplifiers. The count in this module is reset when the reset signal (``PWR\_RST'') is provided by a reset generator (``TPS3103K33'') every 130\,ms. In order to use this test charge injection, the corresponding register in slow control (``DisablePA \& In\_calib\_EN'') have to be set for a channel. Operating more than one channel at the same time should not be recommended for the precise calibration.
+
+\subsubsection{Clock signal output}
+The clock signal is probed out from the front-panel NIM output of the module by the user's selection as follows;
+	\begin{itemize}
+		\item OFF (low level, by default),
+		\item ON (high level),
+		\item Clock signal, with the frequency of 1\,Hz, 10\.Hz, 100\.Hz, 1\.kHz, 10\.kHz, 100\.kHz, 3\.MHz.
+\end{itemize}
+ 
+\section{Control software}
+\subsection{Date acquisition}
+\subsection{EASIROC ``slow control''}
+\subsection{Other modules' controller}
+\subsection{Register}
+	\begin{enumerate}
+		\item DefaultRegisterValue.yml ... Definition of the default values of all slow control bits.
+		\item RegisterAttribute.yml ... Definition of the bit structure for each parameter of slow control, the number of bits, bits order to be sent, and which of high or low to be active.
+		\item RegisterValue.yml ... Some parameters which user would like to overwrite the default value. 
+		\item RegisterValueAlias.yml ... Definition of alias parameters which would be used as register values.
+		\item Calibration.yml ... Coefficients for converting the monitor ADC's outputs to the voltage, current, or temperature, and for converting the input value of the internal bias voltage to the corresponding DAC value.
+	\end{enumerate}
+\section{Performance Test}
+\subsection{List of performance tests}
+\subsubsection{Calibration}
+	\begin{enumerate}
+		\item Internal bias power supply ... LT3482EUD is used as an internal bias power supply, which provides MPPCs with bias voltage in the range from 0~V to 90~V, in response to 16-bit input. Setting the jumper pin(JP3) to be short-circuited, its voltage is probed out from the front panel output, and possible to be measured with multi-meter. The measured voltage is calibrated with the 16-bit input.
+		\item Monitor ADC ... AD7795BRUZ is mounted on this module as the monitor ADC, and able to measure bias voltage, bias current, 8-bit input DAC, and temperature. The bias voltage and 8-bit input DAC are directly measured by multi-meter and the corresponding value of the monitor ADC is calibrated.
+	\end{enumerate}
+
+\subsubsection{Slow control test}
+EASIROC's parameters as follows(Fig.\ref{fig:slowcontrol_para}) are controlled by ``Slow control'' through RBCP bus. As a performance test of the updated firmware and the whole EASIROC model, not of the chip itself,  it is confirmed whether each ``slow control'' parameter  behaves as expected to the user's input value.
+
+\subsubsection{New functions test}
+Some new functions as follows are implemented into EASIROC firmware for the first time.
+	\begin{enumerate}
+		\item Clock signal output
+		\item Pattern trigger
+		\item Trigger width adjuster
+	\end{enumerate}
+These functions' behaviors are confirmed so that they are correct as expected and controlled, and do not disturb other functions especially for data acquisition.
+
+\subsubsection{Performance test with test pulse}
+After that each component of the updated firmware correctly behaves is confirmed, the performance as an EASIROC module is measured with the test pulse inputs to MPPC input pins. Here is the list of the measurements. Almost all of the measurements is done with the setup as Fig. \ref{fig:setup_testpulse}.
+	\begin{enumerate}
+		\item Data transfer time
+		\item ADC's behavior to input charge
+		\item MHTDC's time resolution
+		\item Scaler's behavior
+		\item Tolerance for high event rate
+		\item Multi-hit separation
+	\end{enumerate}
+
+Table \ref{tab:modules_testpulse} shows the specification of the modules used for the measurement.
+%%%%%%%%%%%%%%%%%%%%%
+\begin{table}[htbp]
+\begin{center}
+\caption{The modules for the measurement with test pulse injection.}
+\begin{tabular}{ll}
+Module & Specification\\
+Function Generator & \\
+Gate \& Delay & \\
+TTL-NIM & \\
+FAN IN/OUT & \\
+ATTENUATOR & \\
+\end{tabular}
+\label{tab:mod_testpulse}
+\end{center}
+\end{table}
+%%%%%%%%%%%%%%%%%%%%%
+
+
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=0.9\hsize]{fig/TestpulseMeasurementSetup.png}
+		\caption{Setup for the performance test with test pulse.}
+		\label{fig:setup_testpulse}
+	\end{figure}
+
+\subsubsection{Performance test with 32-channel arrayed MPPC}
+%%%%%%%%%%%%%%%%%%%%%
+\begin{table}[htbp]
+\begin{center}
+\caption{The modules for the measurement with 32-channel arrayed MPPC}
+\begin{tabular}{ll}
+Module  & Specification\\
+32-channel arrayed MPPC & \\
+LED & \\
+Clock module & \\
+Gate generator & \\
+\end{tabular}
+\label{tab:mod_MPPC}
+\end{center}
+\end{table}
+%%%%%%%%%%%%%%%%%%%%%
+
+
+\subsubsection{Chip fault test with calibration input}
+
+\subsection{Calibration of bias voltage control for MPPC.}
+The NIM EASIROC module contains bias voltage supplier, which is able to provide voltage up to around 90\,V in accordance with DAC value input. This bias voltage is in common for all the channels of MPPCs, and it would be possible to probe the value from the front-panel output when the jumper pin (``JP3'') is short cut. The bias voltage is measured by a multi-meter, whose specification is written in Tab. \ref{tab:multi_meter}. The bias voltage is measured to the input 16-bit DAC value as Fig. \ref{fig:hvcontrol}, and the linearity is observed up to 92\,V and the voltage is saturated.
+
+%%%%%%%%%%%%%%%%%%%%%
+\begin{table}[htbp]
+\begin{center}
+\caption{Multi-meter's specifications}
+\begin{tabular}{ll}
+Specification  & Remarks\\
+aaa & aaa\\
+aaa & aaa\\
+\end{tabular}
+\label{tab:multi_meter}
+\end{center}
+\end{table}
+%%%%%%%%%%%%%%%%%%%%%
+
+ 	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=0.6\hsize]{fig/HVControl.png}
+		\caption{The bias voltage to the input DAC value.}
+		\label{fig:hvcontrol}
+	\end{figure}
+
+\subsection{Calibration of the monitor ADC.}
+
+\subsection{Feedback capacitor of preamplifier controlled by slow control}
+The input signal from MPPCs are transfered into the EASIROC chip and fist arrived at the preamplifier with high gain or low gain. The value of gain is able to be controlled by changing the feedback capacity via slow control. As decreasing the feedback capacity, the gain is increased and it is confirmed that the gain is correctly controlled as Fig. \ref{fig:preamp}. Note that the waveforms in the figure are not the whole waveform after the preamplifier, but just around the peak of the waveform.
+
+ 	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=0.6\hsize]{fig/PreAMP_HG.png}
+		\caption{The front-panel signals for the high gain preamplifier in EASIROC with different feedback capacitors.}
+		\label{fig:preamp}
+	\end{figure}
+
+\subsection{Hold timing control}
+
+
+	\begin{figure}[ht]
+	\begin{minipage}[t]{0.5\hsize}
+		\centering
+		\includegraphics[width=0.95\hsize]{fig/HoldTiming_good.png}
+		\caption{The signal of the slow shaper after high gain preamplifier.}
+		\label{fig:sshhg_good}
+	\end{minipage}
+	\begin{minipage}[t]{0.5\hsize}
+		\centering
+		\includegraphics[width=0.95\hsize]{fig/HoldTiming_late.png}
+		\caption{The signal of the slow shaper after high gain preamplifier.}
+		\label{fig:sshhg_late}
+	\end{minipage}
+	\end{figure}
+
+ 	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=0.6\hsize]{fig/HoldTiming.png}
+		\caption{The signal of the slow shaper after high gain preamplifier.}
+		\label{fig:sshhg}
+	\end{figure}
+
+\subsection{Data transfer time}
+Changing the delay time from the ``HOLD'' trigger to the ``ACCEPT'' signal, the distribution of the ADC values is measured.
+
+\subsection{ADC's behavior to input charge}
+The setup of this measurement is shown in Fig. \ref{fig:setup_testpulse}. The distribution of ADC values are fitted with a gauss function, and the mean value of the gauss function is determined to be the average ADC value for the setup, and the sigma of the that is to be the statistic error for the ADC value. The ADC values are plotted as functions of input charge from the capacitor in Fig. \ref{fig:adctocharge}. Shapers in EASIROC with different feedback capacitances behave differently to the input charges; Both of the feedback capacitors of  the ``high gain shaper'' and that of the ``low gain shaper'' are set as 200\,fF. The ``high gain shaper'' is more sensitive to small value of charge, whereas the ``low gain shaper'' is more sensitive to relatively large value of charge. Both of them are finally saturated at a constant value.
+
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=0.6\hsize]{fig/ADCtoCharge.png}
+		\caption{ADC value of ``high gain slow shaper'' and ``low gain slow shaper'' to the input charge.}
+		\label{fig:adctocharge}
+	\end{figure}
+
+
+\subsection{MHTDC's time resolution measurement}
+
+Figure \ref{fig:setup_testpulse} shows the setup for the MHTDC's time resolution measurement. This TDC value means the time difference from the timing of discriminator's signal to the timing of ``T STOP'' signal, therefore the time resolution includes the following components;
+	\begin{itemize}
+		\item the precision of discriminator signal's timing by the chip,
+		\item that of delayed signal by ``Gate and Delay'' module,
+		\item the accuracy of the MHTDC module in the firmware,
+		\item the fluctuation of arrival timing of signals in the EASIROC module.
+	\end{itemize}
+The precision of the function generator needs not to be considered because the ``TRIG'' front-panel output is synchronized with the discriminator signal.
+
+
+
+Figure \ref{fig:timeresolution} shows the distribution of TDC values for about 55 million events, and the gauss function fitting the distribution. As the \,$\sigma$ of the gauss function, the time resolution of the EASIROC module is measured to be 0.53\,ns.
+
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=0.6\hsize]{fig/TDC_TimeResolution.png}
+		\caption{Distribution of MHTDC value with test pulse.}
+		\label{fig:timeresolution}
+	\end{figure}
+
+\subsection{Scaler test with test pulse}
+Figure \ref{fig:setup_scaler} shows the setup for the performance test of the scaler function in firmware. In this test measurement, one of the front-panel NIM inputs is directly connected to the input for scaler module in the firmware, and the scaler counts are measured to the frequency of the input pulse. The trigger rate for readout is fixed to be 1\,kHz. The result is plotted in the Fig. \ref{fig:scalertest}. Scaler counts are consistent with the frequency of the input pulse by the accuracy of 0.5\% up to 100\,kHz, 2\% up to 2\,MHz. Howeve, the scaler counts saturate at 4095 because the value is the maximum countable number for each event. 
+
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=0.6\hsize]{fig/ScalerTest.png}
+		\caption{Scaler counts plotted to the frequency of the input pulse.}
+		\label{fig:scalertest}
+	\end{figure}
+
+\subsection{Tolerance for high event rate.}
+\subsection{Multi-hit separation}
+In order to measure the ability of MHTDC to separate multi-hits, double pulses are used as inputs for the EASIROC module with the setup as Fig. \ref{fig:setup_multihit}. The data acquisition triggers are synchronized with the input pulse by the function generator. The ability of multi-hit separation as the MHTDC module in the firmware was already measured and it was confirmed that the limitation of multi-hit separation was 7\,ns as the width between the trailing edge of the first pulse and the leading edge of the second pulse\cite{shiozaki}. Therefore, the ability as the EASIROC module only needs to be measured.
+
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=0.95\hsize]{fig/TestpulseMeasurementSetup2.png}
+		\caption{Setup for multi-hit measurement.}
+		\label{fig:setup_multihit}
+	\end{figure}
+
+Figure \ref{fig:double_input} is the waveform of the input to a channel of the front-panel MPPC input of the EASIROC module. Given the shaping time of ``fast shaper'' with 15\,ns, the delay time is decreased down to about 60\,ns. The MHTDC distributions for the two discriminator signals are in Fig. \ref{fig:doublepulse}. The time width between the trailing edge of the first signal and the leading edge of the second signal is 16\,ns, and it is confirmed that there is no missing edges with this time margin. Due to the negative pulses existing, the measurement with even smaller time margin could not be done.
+
+	\begin{figure}[ht]
+	\begin{minipage}[t]{0.5\hsize}
+		\centering
+		\includegraphics[width=0.95\hsize]{fig/DoublePulse_input.png}
+		\caption{The double-pulse input.}
+		\label{fig:doublepulse_input}
+	\end{minipage}
+	\begin{minipage}[t]{0.5\hsize}
+		\centering
+		\includegraphics[width=0.95\hsize]{fig/DoublePulse_60ns.png}
+		\caption{Distribution of MHTDC value with double test pulses separated by 60ns.}
+		\label{fig:doublepulse}
+	\end{minipage}
+	\end{figure}
+
+\subsection{Module performance test with signal from 32ch MPPC array}
+In order to confirm that the EASIROC module is able to acquire data from MPPC's signal, and to control the bias voltage for MPPCs, the following performance is measured with 32ch MPPC array and light injection from LED. 
+	\begin{enumerate}
+		\item Photon counting performance
+		\item MPPC's gain linearity
+	\end{enumerate}
+
+Figure \ref{fig:mppc_hist} shows an example of the distribution of the MPPC's signal, and the gauss functions fitting the peak for each number of photo electrons from 0 to 4. The trigger signal here is synchronized with the 1-kHz clock signal controlling LED's light injection. The MPPC's gain is measured as the difference of ADC values between 1\,p.e. and 2\,p.e., and it is confirmed that the gain is controlled by the InputDAC value of EASIROC. Figure \ref{fig:mppc_gain} shows the gain changes linearly in accordance with the overvoltage.
+
+	\begin{figure}[ht]
+	\begin{minipage}[t]{0.5\hsize}
+		\centering
+		\includegraphics[width=0.95\hsize]{fig/GainFit_example.png}
+		\caption{MPPC's signal distribution with the overvoltage of about 2\,V, and gauss functions fitting the peaks of 0\,p.e., 1\,p.e., 2\,p.e., 3\,p.e. and 4\,p.e.}
+		\label{fig:mppc_hist}
+	\end{minipage}
+	\begin{minipage}[t]{0.5\hsize}
+		\centering
+		\includegraphics[width=0.95\hsize]{fig/InputDAC_Control.png}
+		\caption{MPPC's gain distribution to the overvoltage.}
+		\label{fig:mppc_gain}
+	\end{minipage}
+	\end{figure}	
+
+Furthermore, it is confirmed that the EASIROC module is able to control many MPPC channels at the same time. Figure \ref{fig:mppc_all} shows the ADC distribution for MPPC signals. 32-channel arrayed MPPC is connected to one of two chips on the EASIROC module, which corresponds to channel 32 to 63, and the other chip is open. The MPPCs are operated at the overvoltage of about 2\,V, and it is observed that there are several peaks of photo electrons from 1\,p.e. to 4\,p.e. (or 5\,p.e.). Note that in Fig. \ref{fig:mppc_all} the pedestal position is adjusted at 750 for the purpose to make the figure easy to be compared between channels. The gains are increased a bit as close to the edge channel within the chip with the MPPC signals, and this is because a 3-m long flat cable is used for the connection between 32-channel arrayed MPPC and EASIROC and is more sensitive to the noise as close to the edge of the cable.
+
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=0.7\hsize]{fig/MPPCoperation.png}
+		\caption{MPPC's signal distribution with the overvoltage of about 2\,V for all the channels on a chip of two, corresponding to channel 32 to 63.}
+		\label{fig:mppc_all}
+	\end{figure}	
+
+\subsection{InputDAC behavior check test with calibration input.}
+EASIROC has a function to inject the calibration charge (``in\_calib''), and both of high and low gains are provided with the same constant charge. This calibration charge would be used for checking the behavior of InputDAC. The ADC distributions when the calibration charge is injected with the InputDAC value of 400 and 100 are shown in Fig. \ref{fig:incalib_ok} and Fig. \ref{fig:incalib_ng}. When the InputDAC value is supposed to be broken, the ADC distribution is always as if DAC being turned off (Fig. \ref{fig:incalib_ng}) regardless of the InputDAC value. At the same time the analog memory value in EASIROC is observed unstably, so that it is sometimes corresponding value to the input charge and other times small constant value.
+
+	\begin{figure}[ht]
+	\begin{minipage}[t]{0.5\hsize}
+		\centering
+		\includegraphics[width=0.95\hsize]{fig/Incalib_test_ok.png}
+		\caption{ADC distribution for the calibration charge (``Incalib'') with the InputDAC 400 (ON).}
+		\label{fig:incalib_ok}
+	\end{minipage}
+	\begin{minipage}[t]{0.5\hsize}
+		\centering
+		\includegraphics[width=0.95\hsize]{fig/Incalib_test_ng.png}
+		\caption{ADC distribution with the calibration charge (``Incalib'') with the InputDAC 100 (OFF).}
+		\label{fig:incalib_ng}
+	\end{minipage}
+	\end{figure}	
+
+\clearpage
+\appendix
+\section{Troubles in developing the firmware}
+\subsection{meta-stable}
+
+\clearpage
+	\begin{thebibliography}{99}
+		\bibitem{EASIROC datesheet} EASIROC DATASHEET Version:5 April 2011
+		\bibitem{HV datasheet} LT3482 data sheet, Linear Technology.
+		\bibitem{dac8411_datasheet} DAC8x11 2-V to 5.5-V, 80-$\mu$A, 14- and 16-Bit, Low-Power, Single-Channel,Digital-to-Analog Converters in SC70 Package, TEXAS INSTRUMENTS.
+		\bibitem{monitor ADC} AD7794/AD7795 data sheet, ANALOG DEVICES
+		\bibitem{shiozaki} âñçËåíçO. Development of a MPPC multi-channel readout system for the $\Sigma$p scattering experiment. Master thesis. ìåñkëÂäwëÂäwâ@óùäwå§ãÜâ», ï®óùäwêÍçU, 2014
+\end{thebibliography}
+
+\end{document}			

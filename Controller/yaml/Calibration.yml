@@ -1,0 +1,9 @@
+HVControl: 
+        - 483.183
+        - 780.0
+MonitorADC:
+        HV: 0.00208
+        Current: 0.034
+        InputDac: 0.0000685
+        Temperature: 4500.0
+
